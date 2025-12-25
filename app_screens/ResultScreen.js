@@ -23,13 +23,17 @@ export default function ResultScreen({ route, navigation }) {
   const [analysis, setAnalysis] = useState(null);
   const [productName, setProductName] = useState('');
 
-  const imageUri = route?.params?.imageUri || '';
+  const savedAnalysis = route?.params?.savedAnalysis;
+  const imageUri = savedAnalysis?.imageUri || route?.params?.imageUri || '';
 
   useEffect(() => {
-    if (imageUri) {
+    if (savedAnalysis) {
+      setAnalysis(savedAnalysis);
+      setProductName(savedAnalysis.productName || '');
+    } else if (imageUri) {
       processImage(imageUri);
     }
-  }, [imageUri]);
+  }, [imageUri, savedAnalysis]);
 
   const processImage = async (uri) => {
     setLoading(true);
@@ -59,7 +63,12 @@ export default function ResultScreen({ route, navigation }) {
         if (data.productName) setProductName(data.productName);
       }
     } catch (error) {
-      Alert.alert('Error', 'Could not analyze image. Please try again.');
+      console.error("Process Image Error:", error);
+      if (error.message.includes('429')) {
+        Alert.alert('Quota Exceeded', 'You are scanning too fast! Please wait a moment and try again.');
+      } else {
+        Alert.alert('Error', 'Could not analyze image. Please try again. \n' + error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -110,13 +119,30 @@ export default function ResultScreen({ route, navigation }) {
     return '#e74c3c';
   };
 
+  // Case 1: Accessed via Tab Bar (No Image)
+  if (!imageUri && !savedAnalysis) {
+    return (
+      <View style={styles.emptyContainer}>
+        <MaterialIcons name="qr-code-scanner" size={64} color="#ccc" />
+        <Text style={styles.emptyText}>No label scanned yet</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => navigation.navigate('Scan')}>
+          <Text style={styles.retryText}>Start Scanning</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Case 2: Analysis Failed (Has Image)
   if (!analysis && !loading) {
     return (
       <View style={styles.emptyContainer}>
         <MaterialIcons name="broken-image" size={64} color="#ccc" />
-        <Text style={styles.emptyText}>No analysis available</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={() => navigation.goBack()}>
+        <Text style={styles.emptyText}>Analysis failed</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => processImage(imageUri)}>
           <Text style={styles.retryText}>Try Again</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 20 }}>
+          <Text style={{ color: '#666' }}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -244,13 +270,15 @@ export default function ResultScreen({ route, navigation }) {
             </View>
           )}
 
-          {/* Save Button */}
-          <TouchableOpacity style={styles.saveBtn} onPress={saveToLog}>
-            <LinearGradient colors={['#208091', '#16a085']} style={styles.saveGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-              <Text style={styles.saveBtnText}>Save to Diary</Text>
-              <MaterialIcons name="check" size={20} color="#fff" />
-            </LinearGradient>
-          </TouchableOpacity>
+          {/* Save Button (Only if not already saved) */}
+          {!savedAnalysis && (
+            <TouchableOpacity style={styles.saveBtn} onPress={saveToLog}>
+              <LinearGradient colors={['#208091', '#16a085']} style={styles.saveGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                <Text style={styles.saveBtnText}>Save to Diary</Text>
+                <MaterialIcons name="check" size={20} color="#fff" />
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
 
         </View>
         <View style={{ height: 40 }} />

@@ -170,10 +170,13 @@ export default function TodayScreen({ navigation }) {
                   <View style={[styles.logIcon, { backgroundColor: item.vegetarianStatus === 'Vegetarian' ? '#e8f5e9' : '#ffebee' }]}>
                     <Text style={{ fontSize: 20 }}>{item.vegetarianStatus === 'Vegetarian' ? '🥗' : '🥩'}</Text>
                   </View>
-                  <View style={styles.logContent}>
+                  <TouchableOpacity
+                    style={styles.logContent}
+                    onPress={() => navigation.navigate('Result', { savedAnalysis: item })}
+                  >
                     <Text style={styles.logName} numberOfLines={1}>{item.productName}</Text>
                     <Text style={styles.logNutrition}>{item.calories} kcal • {item.protein}g protein</Text>
-                  </View>
+                  </TouchableOpacity>
                   <TouchableOpacity onPress={() => deleteLog(item.id)} style={styles.deleteBtn}>
                     <MaterialIcons name="close" size={18} color="#aaa" />
                   </TouchableOpacity>
