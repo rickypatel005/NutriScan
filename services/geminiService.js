@@ -4,7 +4,7 @@ export const analyzeImageWithGemini = async (base64Data, userProfile = { vegType
   try {
     console.log('Sending image to Gemini Service...');
     const response = await axios.post(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent',
       {
         contents: [
           {
