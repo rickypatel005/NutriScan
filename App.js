@@ -61,6 +61,13 @@ function RootNavigator() {
   const { theme, colors, isDark } = useTheme();
 
   useEffect(() => {
+    // Guard against null auth when Firebase fails to initialize
+    if (!auth) {
+      console.error('Firebase auth is not initialized');
+      setLoading(false);
+      return;
+    }
+
     const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (!currentUser) {
