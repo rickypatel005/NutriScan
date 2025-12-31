@@ -1,6 +1,6 @@
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { useState, useEffect } from 'react';
 import {
   Alert,
@@ -75,7 +75,7 @@ export default function LoginScreen({ navigation }) {
       let msg = 'Authentication failed. Please check your connection.';
 
       if (error.code === 'auth/invalid-email') msg = 'Invalid email address format.';
-      if (error.code === 'auth/wrong-password') msg = 'Incorrect password. Try "Forgot Password"?';
+      if (error.code === 'auth/wrong-password') msg = 'Incorrect password.';
       if (error.code === 'auth/email-already-in-use') msg = 'This email is already registered. Try logging in.';
       if (error.code === 'auth/weak-password') msg = 'Password should be at least 6 characters.';
       if (error.code === 'auth/invalid-credential') msg = 'Incorrect email or password.';
@@ -88,21 +88,7 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
-  const handleForgotPassword = async () => {
-    if (!email) {
-      setErrorDetails('Please enter your email to reset password.');
-      return;
-    }
-    try {
-      await sendPasswordResetEmail(auth, email);
-      Alert.alert('Email Sent', 'Check your inbox for password reset instructions.');
-      setErrorDetails('');
-    } catch (e) {
-      console.log(e);
-      if (e.code === 'auth/user-not-found') setErrorDetails('No account found with this email.');
-      else setErrorDetails('Failed to send reset email.');
-    }
-  };
+
 
   return (
     <View style={styles.container}>
@@ -177,11 +163,7 @@ export default function LoginScreen({ navigation }) {
           </View>
 
           {/* Forgot Password */}
-          {isLogin && (
-            <TouchableOpacity style={{ alignSelf: 'flex-end', marginTop: 8, padding: 4 }} onPress={handleForgotPassword}>
-              <Text style={styles.forgotPassText}>Forgot Password?</Text>
-            </TouchableOpacity>
-          )}
+
 
           {/* Main Action Button */}
           <TouchableOpacity

@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "NutriScanner",
+    "name": "NutriScan",
     "slug": "nutriscanner",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/nutriscan-logo.jpg",
     "scheme": "nutriscanner",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,10 +14,8 @@
     "android": {
       "package": "com.nutriscanner.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/images/nutriscan-logo.jpg"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
@@ -30,13 +28,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow NutriScanner to access your camera to scan food labels."
+          "cameraPermission": "Allow NutriScan to access your camera to scan food labels."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow NutriScanner to access your photos to import food labels."
+          "photosPermission": "Allow NutriScan to access your photos to import food labels."
         }
       ],
       [
