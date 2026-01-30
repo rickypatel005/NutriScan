@@ -2,14 +2,14 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
 import { LinearGradient } from 'expo-linear-gradient';
 import { get, push, ref, remove, serverTimestamp, update } from 'firebase/database';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   ImageBackground,
   ScrollView,
-  StatusBar,
   Share,
+  StatusBar,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -18,6 +18,7 @@ import {
 import { Badge } from '../components/Badges';
 import { Card } from '../components/Card';
 import { GradientButton } from '../components/GradientButton';
+import ProductChatModal from '../components/ProductChatModal';
 import { ProgressRing } from '../components/Progress';
 import { Body, Heading, Label } from '../components/Typography';
 import { COLORS, RADIUS, SHADOWS, SPACING } from '../constants/theme';
@@ -39,6 +40,7 @@ export default function ResultScreen({ route, navigation }) {
 
   // Animation State
   const [animatedScore, setAnimatedScore] = useState(0);
+  const [chatVisible, setChatVisible] = useState(false);
 
   const { imageUri, logData } = route.params || {};
 
@@ -509,6 +511,27 @@ export default function ResultScreen({ route, navigation }) {
         </View>
       </ScrollView>
 
+      {/* Floating Chat Button */}
+      {analysis && (
+        <TouchableOpacity
+          style={[styles.chatFab, { bottom: 100 }]}
+          onPress={() => setChatVisible(true)}
+          activeOpacity={0.8}
+        >
+          <LinearGradient
+            colors={[COLORS.secondary || '#8b5cf6', COLORS.primary]}
+            style={styles.chatFabGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <MaterialIcons name="chat-bubble" size={24} color="#fff" />
+            <Body style={{ color: '#fff', fontWeight: 'bold', marginLeft: 8 }}>Ask AI</Body>
+          </LinearGradient>
+        </TouchableOpacity>
+      )}
+
+
+
       {/* Floating/Fixed Footer */}
       <View style={[styles.footer, { backgroundColor: colors.background, borderColor: colors.border }]}>
         <GradientButton
@@ -516,6 +539,12 @@ export default function ResultScreen({ route, navigation }) {
           onPress={saveToLog}
         />
       </View>
+
+      <ProductChatModal
+        visible={chatVisible}
+        onClose={() => setChatVisible(false)}
+        productContext={analysis}
+      />
     </View>
   );
 }
@@ -559,6 +588,22 @@ const styles = StyleSheet.create({
   stepBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#eee', justifyContent: 'center', alignItems: 'center' },
 
   notesInput: { padding: SPACING.md, borderRadius: RADIUS.md, minHeight: 80, textAlignVertical: 'top' },
+
+  chatFab: {
+    position: 'absolute',
+    right: SPACING.lg,
+    zIndex: 100,
+    borderRadius: RADIUS.full,
+    overflow: 'hidden',
+    ...SHADOWS.premium,
+  },
+  chatFabGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: RADIUS.full,
+  },
 
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: SPACING.lg, borderTopWidth: 1 }
 });
