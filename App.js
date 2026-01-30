@@ -1,21 +1,19 @@
-import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { onAuthStateChanged } from 'firebase/auth';
 import { onValue, ref } from 'firebase/database';
-import { useState, useEffect } from 'react';
-import { ActivityIndicator, useColorScheme, View, TouchableOpacity, StyleSheet } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { DARK_THEME, LIGHT_THEME, COLORS, RADIUS, SHADOWS } from './constants/theme';
+import { COLORS, DARK_THEME, LIGHT_THEME, SHADOWS } from './constants/theme';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { auth, database } from './services/firebaseConfig';
 
-import SettingsScreen from './app_screens/SettingsScreen';
 import AchievementsScreen from './app_screens/AchievementsScreen';
-import EditProfileScreen from './app_screens/EditProfileScreen';
 import DiaryScreen from './app_screens/DiaryScreen'; // Consolidated Screen
+import EditProfileScreen from './app_screens/EditProfileScreen';
 import HomeScreen from './app_screens/HomeScreen';
 import LoginScreen from './app_screens/LoginScreen';
 import ManualEntryScreen from './app_screens/ManualEntryScreen';
@@ -23,6 +21,7 @@ import OnboardingScreen from './app_screens/OnboardingScreen';
 import ProfileScreen from './app_screens/ProfileScreen';
 import ResultScreen from './app_screens/ResultScreen';
 import ScanScreen from './app_screens/ScanScreen';
+import SettingsScreen from './app_screens/SettingsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -81,17 +80,18 @@ function RootNavigator() {
 
   useEffect(() => {
     if (user) {
-      // BYPASS ONBOARDING CHECK
-      console.log('DEBUG: Onboarding check bypassed by user request.');
-      setOnboardingComplete(true);
-      setLoading(false);
-
-      /* 
       const settingsRef = ref(database, `users/${user.uid}/settings`);
+
+      // Safety timeout in case DB is unreachable
+      const safetyTimeout = setTimeout(() => {
+        console.log('DEBUG: Firebase DB timeout - forcing app load');
+        setLoading(false);
+      }, 5000);
+
       const unsubSettings = onValue(settingsRef, (snapshot) => {
+        clearTimeout(safetyTimeout);
         const data = snapshot.val();
-        console.log('DEBUG: User Settings Data:', data); // Debugging line
-        // Check for ANY sign of completion (flag, diet, or limits) to unblock existing users
+        console.log('DEBUG: User Settings Data:', data);
         if (data && (data.onboardingComplete === true || data.diet || data.calculatedLimits)) {
           console.log('DEBUG: Onboarding COMPLETE');
           setOnboardingComplete(true);
@@ -100,9 +100,16 @@ function RootNavigator() {
           setOnboardingComplete(false);
         }
         setLoading(false);
+      }, (error) => {
+        clearTimeout(safetyTimeout);
+        console.error('DEBUG: Firebase DB Error:', error);
+        setLoading(false); // Stop loading even on error
       });
-      return unsubSettings;
-      */
+
+      return () => {
+        clearTimeout(safetyTimeout);
+        unsubSettings();
+      };
     }
   }, [user]);
 

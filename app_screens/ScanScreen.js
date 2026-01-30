@@ -2,12 +2,18 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import { useRef, useState, useEffect } from 'react';
-import { ActivityIndicator, Alert, StatusBar, StyleSheet, TouchableOpacity, View, Animated, Text } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { GradientButton } from '../components/GradientButton';
 import { Body, Heading } from '../components/Typography';
 import { COLORS, RADIUS, SHADOWS, SPACING } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
+import { fetchProductByBarcode } from '../services/barcodeService';
+
+const SCAN_MODES = {
+  LABEL: 'label',
+  BARCODE: 'barcode',
+};
 
 const GUIDANCE_TIPS = [
   "Hold the camera steady",
@@ -27,7 +33,9 @@ export default function ScanScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [torch, setTorch] = useState(false);
   const [cameraType, setCameraType] = useState(CameraType.back);
+  const [scanMode, setScanMode] = useState(SCAN_MODES.LABEL);
   const [guidance, setGuidance] = useState(GUIDANCE_TIPS[0]);
+  const [scanned, setScanned] = useState(false);
 
   const cameraRef = useRef(null);
   const shutterAnim = useRef(new Animated.Value(0)).current;
@@ -107,6 +115,31 @@ export default function ScanScreen({ navigation }) {
     setCameraType(prev => prev === CameraType.back ? CameraType.front : CameraType.back);
   };
 
+  const handleBarcodeScanned = async ({ type, data }) => {
+    if (scanMode !== SCAN_MODES.BARCODE || scanned || loading) return;
+
+    setScanned(true);
+    setLoading(true);
+    try {
+      console.log(`Scanned barcode: ${data} (type: ${type})`);
+      const productData = await fetchProductByBarcode(data);
+      navigation.navigate('Result', { logData: productData });
+    } catch (error) {
+      Alert.alert(
+        'Product Not Found',
+        'This product is not in our database. Try scanning the nutrition label instead.',
+        [{ text: 'OK', onPress: () => setScanned(false) }]
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleScanMode = () => {
+    setScanMode(prev => prev === SCAN_MODES.LABEL ? SCAN_MODES.BARCODE : SCAN_MODES.LABEL);
+    setScanned(false);
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -115,6 +148,10 @@ export default function ScanScreen({ navigation }) {
         ref={cameraRef}
         enableTorch={torch}
         facing={cameraType}
+        barcodeScannerSettings={scanMode === SCAN_MODES.BARCODE ? {
+          barcodeTypes: ['qr', 'ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'code39', 'code93', 'itf14', 'codabar', 'aztec', 'datamatrix', 'pdf417'],
+        } : undefined}
+        onBarcodeScanned={scanMode === SCAN_MODES.BARCODE ? handleBarcodeScanned : undefined}
       />
 
       {/* Shutter Animation Overlay */}
@@ -139,8 +176,15 @@ export default function ScanScreen({ navigation }) {
         <View style={styles.overlayBottom}>
           {/* Dynamic Guidance */}
           <View style={styles.guidancePill}>
-            <MaterialIcons name="info-outline" size={16} color="#fff" style={{ marginRight: 6 }} />
-            <Body inverse style={styles.instructionText}>{guidance}</Body>
+            <MaterialIcons
+              name={scanMode === SCAN_MODES.BARCODE ? "qr-code-scanner" : "info-outline"}
+              size={16}
+              color="#fff"
+              style={{ marginRight: 6 }}
+            />
+            <Body inverse style={styles.instructionText}>
+              {scanMode === SCAN_MODES.BARCODE ? "Align barcode within frame" : guidance}
+            </Body>
           </View>
         </View>
       </View>
@@ -183,26 +227,38 @@ export default function ScanScreen({ navigation }) {
           <Ionicons name="images-outline" size={24} color="#fff" />
         </TouchableOpacity>
 
-        {/* Shutter Button */}
-        <TouchableOpacity
-          activeOpacity={0.9}
-          style={styles.shutterButtonOuter}
-          onPress={handleCapture}
-          disabled={loading}
-        >
-          <View style={styles.shutterButtonInner}>
-            {loading && <ActivityIndicator size="small" color={COLORS.primary} />}
+        {/* Shutter Button (Only for Label Scan) */}
+        {scanMode === SCAN_MODES.LABEL ? (
+          <TouchableOpacity
+            activeOpacity={0.9}
+            style={styles.shutterButtonOuter}
+            onPress={handleCapture}
+            disabled={loading}
+          >
+            <View style={styles.shutterButtonInner}>
+              {loading && <ActivityIndicator size="small" color={COLORS.primary} />}
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <View style={[styles.shutterButtonOuter, { opacity: 0.5, borderColor: 'rgba(255,255,255,0.5)' }]}>
+            <View style={[styles.shutterButtonInner, { backgroundColor: 'transparent' }]}>
+              <MaterialIcons name="qr-code-scanner" size={32} color="#fff" />
+            </View>
           </View>
-        </TouchableOpacity>
+        )}
 
-        {/* Camera Flip */}
+        {/* Scan Mode Toggle */}
         <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={toggleCameraType}
+          style={[styles.secondaryButton, scanMode === SCAN_MODES.BARCODE && { backgroundColor: COLORS.primary }]}
+          onPress={toggleScanMode}
           disabled={loading}
           activeOpacity={0.7}
         >
-          <MaterialIcons name="flip-camera-ios" size={24} color="#fff" />
+          <MaterialIcons
+            name={scanMode === SCAN_MODES.BARCODE ? "camera-alt" : "qr-code-scanner"}
+            size={24}
+            color="#fff"
+          />
         </TouchableOpacity>
       </BlurView>
     </View>
